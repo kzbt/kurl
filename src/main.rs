@@ -71,104 +71,106 @@ fn main() {
     };
 
     if json_output {
-        if let Err(e) = print_json(&url) {
-            eprintln!("Failed to write JSON output: {}", e);
-            std::process::exit(1);
-        }
+        print_json(&url);
     } else {
         print_pretty(&url);
     }
 }
 
 fn print_pretty(url: &Url) {
-    println!("URL Components");
-    println!("==============");
-    println!("  scheme\t: {}", url.scheme());
-
-    if !url.username().is_empty() {
-        println!("  user\t\t: {}", url.username());
-    }
-    if let Some(p) = url.password() {
-        println!("  password\t: {}", p);
-    }
-    if let Some(h) = url.host_str() {
-        println!("  host\t\t: {}", h);
-    }
-    if let Some(p) = url.port() {
-        println!("  port\t\t: {}", p);
-    }
-
-    println!("  path\t\t: {}", url.path());
-
-    if let Some(f) = url.fragment() {
-        println!("  fragment\t: {}", f);
-    }
-
-    if url.query().is_some() {
-        println!("  query\t\t:");
-        for (key, value) in url.query_pairs() {
-            println!("    {} = {}", key, value);
-        }
-    }
+    let _ = print_pretty_impl(&mut std::io::stdout(), url);
 }
 
-fn print_json(url: &Url) -> std::io::Result<()> {
-    use std::io::{self, Write};
+fn print_json(url: &Url) {
+    let _ = print_json_impl(&mut std::io::stdout().lock(), url);
+}
 
-    let stdout = io::stdout();
-    let mut handle = stdout.lock();
-
-    handle.write_all(b"{\"scheme\":\"")?;
-    write_json_escaped(&mut handle, url.scheme())?;
-    handle.write_all(b"\"")?;
+fn print_pretty_impl<W: std::io::Write>(writer: &mut W, url: &Url) -> std::io::Result<()> {
+    writeln!(writer, "URL Components")?;
+    writeln!(writer, "==============")?;
+    writeln!(writer, "  scheme\t: {}", url.scheme())?;
 
     if !url.username().is_empty() {
-        handle.write_all(b",\"user\":\"")?;
-        write_json_escaped(&mut handle, url.username())?;
-        handle.write_all(b"\"")?;
+        writeln!(writer, "  user\t\t: {}", url.username())?;
     }
     if let Some(p) = url.password() {
-        handle.write_all(b",\"password\":\"")?;
-        write_json_escaped(&mut handle, p)?;
-        handle.write_all(b"\"")?;
+        writeln!(writer, "  password\t: {}", p)?;
     }
     if let Some(h) = url.host_str() {
-        handle.write_all(b",\"host\":\"")?;
-        write_json_escaped(&mut handle, h)?;
-        handle.write_all(b"\"")?;
+        writeln!(writer, "  host\t\t: {}", h)?;
     }
     if let Some(p) = url.port() {
-        write!(handle, ",\"port\":{}", p)?;
+        writeln!(writer, "  port\t\t: {}", p)?;
     }
 
-    handle.write_all(b",\"path\":\"")?;
-    write_json_escaped(&mut handle, url.path())?;
-    handle.write_all(b"\"")?;
+    writeln!(writer, "  path\t\t: {}", url.path())?;
 
     if let Some(f) = url.fragment() {
-        handle.write_all(b",\"fragment\":\"")?;
-        write_json_escaped(&mut handle, f)?;
-        handle.write_all(b"\"")?;
+        writeln!(writer, "  fragment\t: {}", f)?;
     }
 
     if url.query().is_some() {
-        handle.write_all(b",\"query\":{")?;
+        writeln!(writer, "  query\t\t:")?;
+        for (key, value) in url.query_pairs() {
+            writeln!(writer, "    {} = {}", key, value)?;
+        }
+    }
+
+    Ok(())
+}
+
+fn print_json_impl<W: std::io::Write>(writer: &mut W, url: &Url) -> std::io::Result<()> {
+    writer.write_all(b"{\"scheme\":\"")?;
+    write_json_escaped(writer, url.scheme())?;
+    writer.write_all(b"\"")?;
+
+    if !url.username().is_empty() {
+        writer.write_all(b",\"user\":\"")?;
+        write_json_escaped(writer, url.username())?;
+        writer.write_all(b"\"")?;
+    }
+    if let Some(p) = url.password() {
+        writer.write_all(b",\"password\":\"")?;
+        write_json_escaped(writer, p)?;
+        writer.write_all(b"\"")?;
+    }
+    if let Some(h) = url.host_str() {
+        writer.write_all(b",\"host\":\"")?;
+        write_json_escaped(writer, h)?;
+        writer.write_all(b"\"")?;
+    }
+    if let Some(p) = url.port() {
+        write!(writer, ",\"port\":{}", p)?;
+    }
+
+    writer.write_all(b",\"path\":\"")?;
+    write_json_escaped(writer, url.path())?;
+    writer.write_all(b"\"")?;
+
+    if let Some(f) = url.fragment() {
+        writer.write_all(b",\"fragment\":\"")?;
+        write_json_escaped(writer, f)?;
+        writer.write_all(b"\"")?;
+    }
+
+    if url.query().is_some() {
+        writer.write_all(b",\"query\":{")?;
         let mut first = true;
         for (key, value) in url.query_pairs() {
             if !first {
-                handle.write_all(b",")?;
+                writer.write_all(b",")?;
             }
             first = false;
-            handle.write_all(b"\"")?;
-            write_json_escaped(&mut handle, &key)?;
-            handle.write_all(b"\":\"")?;
-            write_json_escaped(&mut handle, &value)?;
-            handle.write_all(b"\"")?;
+            writer.write_all(b"\"")?;
+            write_json_escaped(writer, &key)?;
+            writer.write_all(b"\":\"")?;
+            write_json_escaped(writer, &value)?;
+            writer.write_all(b"\"")?;
         }
-        handle.write_all(b"}")?;
+        writer.write_all(b"}")?;
     }
 
-    handle.write_all(b"}\n")?;
+    writer.write_all(b"}\n")?;
     Ok(())
 }
 
@@ -185,4 +187,108 @@ fn write_json_escaped<W: std::io::Write>(writer: &mut W, s: &str) -> std::io::Re
         }
     }
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_print_pretty_basic() {
+        let url = Url::parse("https://example.com/path").unwrap();
+        let mut output = Vec::new();
+
+        let result = print_pretty_impl(&mut output, &url);
+        assert!(result.is_ok());
+
+        let output_str = String::from_utf8(output).unwrap();
+        assert!(output_str.contains("scheme"));
+        assert!(output_str.contains("https"));
+        assert!(output_str.contains("example.com"));
+        assert!(output_str.contains("/path"));
+    }
+
+    #[test]
+    fn test_print_pretty_with_query() {
+        let url = Url::parse("https://example.com?key=value&foo=bar").unwrap();
+        let mut output = Vec::new();
+
+        let result = print_pretty_impl(&mut output, &url);
+        assert!(result.is_ok());
+
+        let output_str = String::from_utf8(output).unwrap();
+        assert!(output_str.contains("query"));
+        assert!(output_str.contains("key = value"));
+        assert!(output_str.contains("foo = bar"));
+    }
+
+    #[test]
+    fn test_print_pretty_with_credentials() {
+        let url = Url::parse("https://user:pass@example.com").unwrap();
+        let mut output = Vec::new();
+
+        let result = print_pretty_impl(&mut output, &url);
+        assert!(result.is_ok());
+
+        let output_str = String::from_utf8(output).unwrap();
+        assert!(output_str.contains("user"));
+        assert!(output_str.contains("password"));
+    }
+
+    #[test]
+    fn test_print_json_basic() {
+        let url = Url::parse("https://example.com/path").unwrap();
+        let mut output = Vec::new();
+
+        let result = print_json_impl(&mut output, &url);
+        assert!(result.is_ok());
+
+        let output_str = String::from_utf8(output).unwrap();
+        assert!(output_str.contains("\"scheme\":\"https\""));
+        assert!(output_str.contains("\"host\":\"example.com\""));
+        assert!(output_str.contains("\"path\":\"/path\""));
+    }
+
+    #[test]
+    fn test_print_json_with_query() {
+        let url = Url::parse("https://example.com?key=value").unwrap();
+        let mut output = Vec::new();
+
+        let result = print_json_impl(&mut output, &url);
+        assert!(result.is_ok());
+
+        let output_str = String::from_utf8(output).unwrap();
+        assert!(output_str.contains("\"query\""));
+        assert!(output_str.contains("\"key\":\"value\""));
+    }
+
+    #[test]
+    fn test_write_json_escaped_quotes() {
+        let mut output = Vec::new();
+        let result = write_json_escaped(&mut output, "test\"quote");
+        assert!(result.is_ok());
+
+        let output_str = String::from_utf8(output).unwrap();
+        assert_eq!(output_str, "test\\\"quote");
+    }
+
+    #[test]
+    fn test_write_json_escaped_backslash() {
+        let mut output = Vec::new();
+        let result = write_json_escaped(&mut output, "test\\path");
+        assert!(result.is_ok());
+
+        let output_str = String::from_utf8(output).unwrap();
+        assert_eq!(output_str, "test\\\\path");
+    }
+
+    #[test]
+    fn test_write_json_escaped_newline() {
+        let mut output = Vec::new();
+        let result = write_json_escaped(&mut output, "test\nline");
+        assert!(result.is_ok());
+
+        let output_str = String::from_utf8(output).unwrap();
+        assert_eq!(output_str, "test\\nline");
+    }
 }
