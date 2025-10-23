@@ -1,5 +1,22 @@
 use url::Url;
 
+const VERSION: &str = env!("CARGO_PKG_VERSION");
+const HELP_TEXT: &str = r#"kurl - URL parser and pretty printer
+
+USAGE:
+    kurl [OPTIONS] <URL>
+    echo <URL> | kurl [OPTIONS]
+
+OPTIONS:
+    --json              Output as JSON instead of formatted text
+    -h, --help          Show this help message
+    -V, --version       Show version information
+
+EXAMPLES:
+    kurl "https://user:pass@example.com:8080/path?key=value#fragment"
+    echo "https://example.com/path" | kurl --json
+"#;
+
 struct UrlComponents<'a> {
     url: &'a Url,
     user: Option<&'a str>,
@@ -17,7 +34,8 @@ impl<'a> UrlComponents<'a> {
     }
 
     fn print_pretty(&self) {
-        println!("URL Components:");
+        println!("URL Components");
+        println!("==============");
         println!("  scheme\t: {}", self.url.scheme());
 
         if let Some(u) = self.user {
@@ -127,7 +145,26 @@ fn main() {
     use std::io::{self, IsTerminal, Read};
 
     let args: Vec<String> = std::env::args().collect();
-    let json_output = args.iter().any(|a| a == "--json");
+
+    let mut json_output = false;
+
+    // Check for help or version flags early
+    for arg in &args[1..] {
+        match arg.as_str() {
+            "-h" | "--help" => {
+                println!("{}", HELP_TEXT);
+                return;
+            }
+            "-V" | "--version" => {
+                println!("kurl {}", VERSION);
+                return;
+            }
+            "-j" | "--json" => {
+                json_output = true;
+            }
+            _ => {}
+        }
+    }
 
     let url = if let Some(url_arg) = args.iter().skip(1).find(|a| a.as_str() != "--json") {
         Url::parse(url_arg).unwrap_or_else(|e| {
@@ -154,6 +191,7 @@ fn main() {
     } else {
         eprintln!("Usage: {} [--json] <url>", args[0]);
         eprintln!("   or: echo <url> | {} [--json]", args[0]);
+        eprintln!("\nUse --help for more information.");
         std::process::exit(1);
     };
 
