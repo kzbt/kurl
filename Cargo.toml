@@ -2,6 +2,16 @@
 name = "kurl"
 version = "0.1.0"
 edition = "2024"
+authors = ["Kiran Sebastian <kiran@greyshepherd.com>"]
+description = "A lightweight CLI tool to parse and output URL components in plain text or JSON"
+license = "MIT"
+repository = "https://github.com/kzbt/kurl"
 
 [dependencies]
 url = "2.5.7"
+
+[profile.release]
+opt-level = 3
+lto = true
+codegen-units = 1
+strip = true
