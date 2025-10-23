@@ -4,7 +4,15 @@ A lightweight, CLI tool to parse and pretty print URL components in plain text o
 
 ## Installation
 
-```bash
+Homebrew tap:
+```
+brew install kzbt/homebrew-tap/kurl
+```
+
+Cargo:
+```
+git clone https://github.com/kzbt/kurl.git
+cd kurl
 cargo install --path .
 ```
 
