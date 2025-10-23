@@ -8,7 +8,7 @@ USAGE:
     echo <URL> | kurl [OPTIONS]
 
 OPTIONS:
-    --json              Output as JSON instead of formatted text
+    -j, --json          Output as JSON instead of formatted text
     -h, --help          Show this help message
     -V, --version       Show version information
 
