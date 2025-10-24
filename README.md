@@ -6,7 +6,7 @@ A lightweight, CLI tool to parse and pretty print URL components in plain text o
 
 Homebrew tap:
 ```
-brew install kzbt/homebrew-tap/kurl
+brew install kzbt/tap/kurl
 ```
 
 Cargo:
